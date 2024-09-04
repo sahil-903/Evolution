@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./lib/SafeMath.sol";
 import "./lib/Address.sol";
-import "./interfaces/IRewardManager.sol";
+import "./interfaces/IRewardVault.sol";
 import "./interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IUniswapV2Factory.sol";
 
@@ -43,13 +43,13 @@ contract Evolution is ERC20, Ownable {
     uint256 public buyCount = 0;
 
     // Reward Manger
-    IRewardManager public rewardManager;
+    IRewardVault public rewardVault;
 
     // Fee Exclusion Addresses
     mapping(address => bool) public whitelistAddressForFee;
 
     // Events
-    event RewardManagerAddrChanged(address rewardManager);
+    event RewardManagerAddrChanged(address rewardVault);
     event WhitelistAddressForFee(address[] userAddresss, bool[] values);
 
     constructor(
@@ -128,12 +128,12 @@ contract Evolution is ERC20, Ownable {
                 // first buy limit is not exceeded
                 if (buyCount <= reduceTransferTaxAt) {
                     taxAmount = amount.mul(initialTransferTax).div(100);
-                    _transfer(from, address(rewardManager), taxAmount);
-                    rewardManager.distributeRewards(taxAmount);
+                    _transfer(from, address(rewardVault), taxAmount);
+                    rewardVault.distributeRewards(taxAmount);
                 } else {
-                    // checking if user is registered on RewardManager contract, and calculating tax based on that.
-                    if (rewardManager.isUserRegistered(to)) {
-                        address referrer = rewardManager.getReferrerAddress(to);
+                    // checking if user is registered on RewardVault contract, and calculating tax based on that.
+                    if (rewardVault.isUserRegistered(to)) {
+                        address referrer = rewardVault.getReferrerAddress(to);
 
                         // Calculating tax referral amount
                         uint256 taxAmountToReferrer = amount
@@ -154,10 +154,10 @@ contract Evolution is ERC20, Ownable {
                         if (taxAmountToDistribute > 0) {
                             _transfer(
                                 from,
-                                address(rewardManager),
+                                address(rewardVault),
                                 taxAmountToDistribute
                             );
-                            rewardManager.distributeRewards(
+                            rewardVault.distributeRewards(
                                 taxAmountToDistribute
                             );
                         }
@@ -180,10 +180,10 @@ contract Evolution is ERC20, Ownable {
                         // Distributing tax amount of unverified user to distribute.
                         _transfer(
                             from,
-                            address(rewardManager),
+                            address(rewardVault),
                             taxAmountToDistribute
                         );
-                        rewardManager.distributeRewards(taxAmountToDistribute);
+                        rewardVault.distributeRewards(taxAmountToDistribute);
 
                         // Total tax amount used
                         taxAmount = taxAmountToDistribute + taxAmountToOwner;
@@ -196,14 +196,14 @@ contract Evolution is ERC20, Ownable {
         _transfer(from, to, amount.sub(taxAmount));
     }
 
-    // This function will set the addres for rewardManager
+    // This function will set the addres for rewardVault
     function setRewardManager(
         address _rewardManger
     ) external virtual onlyOwner {
-        require(_rewardManger != address(0), "Invalid rewardManager address");
+        require(_rewardManger != address(0), "Invalid rewardVault address");
 
         require(_rewardManger.isContract(), "RewardManger should be contract");
-        rewardManager = IRewardManager(_rewardManger);
+        rewardVault = IRewardVault(_rewardManger);
         whitelistAddressForFee[_rewardManger] = true;
         emit RewardManagerAddrChanged(_rewardManger);
     }

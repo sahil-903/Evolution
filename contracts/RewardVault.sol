@@ -9,7 +9,7 @@ import "./lib/ByteHasher.sol";
 import "./interfaces/IEvolution.sol";
 import "./interfaces/IWorldID.sol";
 
-contract RewardManager is Ownable {
+contract RewardVault is Ownable {
     using SafeMath for *;
     using Address for address;
     using ByteHasher for bytes;
@@ -295,7 +295,9 @@ contract RewardManager is Ownable {
         for (uint8 level = 0; level < totalLevels; level++) {
             if (levels[level].noOfUsers > 0) {
                 // Calculating per user Evolution reward amount and setting the amount as rewardPerUser for each level.
-                uint rewardForLevel = _taxAmount.mul((level.add(1)).mul(10)).div(100);
+                uint rewardForLevel = _taxAmount
+                    .mul((level.add(1)).mul(10))
+                    .div(100);
                 levels[level].rewardPerUser = rewardForLevel;
                 emit RewardsDistributed(level, levels[level].rewardPerUser);
             }
@@ -306,8 +308,10 @@ contract RewardManager is Ownable {
 
         // Calculate initial rewards based on percentage distribution
         for (uint256 level = 0; level < totalLevels; level++) {
-            // L1 -> 10%, L2 -> 20%, L3 -> 30%, L4 -> 40% 
-            initialRewards[level] = (_taxAmount.mul(level.add(1)).mul(10)).div(100);
+            // L1 -> 10%, L2 -> 20%, L3 -> 30%, L4 -> 40%
+            initialRewards[level] = (_taxAmount.mul(level.add(1)).mul(10)).div(
+                100
+            );
         }
 
         // Calculate total users
@@ -330,7 +334,9 @@ contract RewardManager is Ownable {
         if (totalUsers > 0) {
             for (uint8 level = 0; level < totalLevels; level++) {
                 if (levels[level].noOfUsers > 0) {
-                    adjustedRewards[level] += (remainingReward * levels[level].noOfUsers) / totalUsers;
+                    adjustedRewards[level] +=
+                        (remainingReward * levels[level].noOfUsers) /
+                        totalUsers;
                 }
             }
         }
@@ -339,7 +345,9 @@ contract RewardManager is Ownable {
         uint256[] memory finalRewardsPerUser = new uint256[](totalLevels);
         for (uint8 level = 0; level < totalLevels; level++) {
             if (levels[level].noOfUsers > 0) {
-                finalRewardsPerUser[level] = adjustedRewards[level] / levels[level].noOfUsers;
+                finalRewardsPerUser[level] =
+                    adjustedRewards[level] /
+                    levels[level].noOfUsers;
                 levels[level].rewardPerUser = finalRewardsPerUser[level];
             }
             emit RewardsDistributed(level, levels[level].rewardPerUser);
@@ -394,7 +402,10 @@ contract RewardManager is Ownable {
         ].noOfUsers.add(1);
 
         // Burning the required tokens to evolve by user's old evolution level
-        IEvolution(EvolutionToken).burnFrom(msg.sender, totalBurnAmountToEvolve);
+        IEvolution(EvolutionToken).burnFrom(
+            msg.sender,
+            totalBurnAmountToEvolve
+        );
 
         // Setting user's new evolution level and finally evolving the user
         users[msg.sender].evolutionLevel = user.evolutionLevel + 1;
@@ -482,10 +493,7 @@ contract RewardManager is Ownable {
             levels[level]
                 .evolutionCriteriaPerLevel
                 .minOrbReferralsPerLevelToEvolve
-                .mul(
-                    (uint256(orbReferralGrowthRate) **
-                        noOfYearsPassed)
-                );
+                .mul((uint256(orbReferralGrowthRate) ** noOfYearsPassed));
     }
 
     function getMinTokenAmountToBurn(
@@ -496,10 +504,7 @@ contract RewardManager is Ownable {
             levels[level]
                 .evolutionCriteriaPerLevel
                 .tokensToBurnPerLevelToEvolve
-                .div(
-                    (uint256(tokenBurnDecreaseRate) **
-                        noOfYearsPassed)
-                );
+                .div((uint256(tokenBurnDecreaseRate) ** noOfYearsPassed));
     }
 
     function getEvolutionBurnAmount(
@@ -520,7 +525,8 @@ contract RewardManager is Ownable {
         if (
             userReferrals >= getMinReferralsRequiredPerLevelToEvolve(itr) &&
             user.numOrbReferrals >= getMinOrbReferralsCount(itr) &&
-            IEvolution(EvolutionToken).balanceOf(_account) >= getMinTokenAmountToBurn(itr)
+            IEvolution(EvolutionToken).balanceOf(_account) >=
+            getMinTokenAmountToBurn(itr)
         ) {
             totalBurnAmount = totalBurnAmount.add(getMinTokenAmountToBurn(itr));
         }
@@ -548,9 +554,7 @@ contract RewardManager is Ownable {
         return levels[_level].noOfUsers;
     }
 
-    function getUserEvolutionLevel(
-        address _user
-    ) public view returns (uint8) {
+    function getUserEvolutionLevel(address _user) public view returns (uint8) {
         return users[_user].evolutionLevel;
     }
 
@@ -662,7 +666,7 @@ contract RewardManager is Ownable {
         users[_referrer].numDeviceReferrals = users[_referrer]
             .numDeviceReferrals
             .sub(1);
-        
+
         emit Upgraded(_account);
     }
 }
