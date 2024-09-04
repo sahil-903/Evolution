@@ -3,9 +3,9 @@ pragma solidity 0.8.24;
 
 import "../lib/forge-std/src/Test.sol";
 import "../contracts/Evolution.sol";
-import "../contracts/RewardManager.sol";
+import "../contracts/RewardVault.sol";
 import "../contracts/Bot.sol";
-import "../contracts/interfaces/IRewardManager.sol";
+import "../contracts/interfaces/IRewardVault.sol";
 import "../contracts/interfaces/IWorldID.sol";
 import "../contracts/interfaces/IUniswapV2Router02.sol";
 import "../contracts/interfaces/IUniswapV2Factory.sol";
@@ -60,7 +60,7 @@ contract EvolutionTokenTest is Test {
 
     address public weth;
 
-    RewardManager public rewardManager;
+    RewardVault public rewardVault;
 
     Bot public tradingBot;
 
@@ -81,7 +81,7 @@ contract EvolutionTokenTest is Test {
         // Initialize the contract with a total supply of 1 million tokens
         vm.startPrank(owner);
         evolutionToken = new Evolution(tokenTotalSupply);
-        rewardManager = new RewardManager(
+        rewardVault = new RewardVault(
             address(evolutionToken),
             totalLevels,
             IWorldID(worldIdRouter),
@@ -106,22 +106,20 @@ contract EvolutionTokenTest is Test {
         evolutionRewardPercentage[3] = uint32(100000);
         evolutionRewardPercentage[4] = uint32(1000000);
 
-        RewardManager.EvolutionCriteria[]
-            memory data = new RewardManager.EvolutionCriteria[](
-                totalLevels - 1
-            );
-        data[0] = RewardManager.EvolutionCriteria(10, 0, 10000);
-        data[1] = RewardManager.EvolutionCriteria(100, 1, 100000);
-        data[2] = RewardManager.EvolutionCriteria(1000, 10, 1000000);
-        data[3] = RewardManager.EvolutionCriteria(10000, 100, 10000000);
+        RewardVault.EvolutionCriteria[]
+            memory data = new RewardVault.EvolutionCriteria[](totalLevels - 1);
+        data[0] = RewardVault.EvolutionCriteria(10, 0, 10000);
+        data[1] = RewardVault.EvolutionCriteria(100, 1, 100000);
+        data[2] = RewardVault.EvolutionCriteria(1000, 10, 1000000);
+        data[3] = RewardVault.EvolutionCriteria(10000, 100, 10000000);
 
-        rewardManager.setEvolutionRewardPercentagePerLevel(
+        rewardVault.setEvolutionRewardPercentagePerLevel(
             evolutionRewardPercentage
         );
-        rewardManager.setEvolutionCriteria(levels, data);
+        rewardVault.setEvolutionCriteria(levels, data);
         factory = IUniswapV2Factory(uniswapRouter.factory());
         weth = uniswapRouter.WETH();
-        evolutionToken.setRewardManager(address(rewardManager));
+        evolutionToken.setRewardManager(address(rewardVault));
         vm.stopPrank();
     }
 
@@ -138,9 +136,11 @@ contract EvolutionTokenTest is Test {
             tokenTotalSupply * 10 ** evolutionToken.decimals()
         );
         assertTrue(evolutionToken.whitelistAddressForFee(owner));
-        assertTrue(evolutionToken.whitelistAddressForFee(address(evolutionToken)));
+        assertTrue(
+            evolutionToken.whitelistAddressForFee(address(evolutionToken))
+        );
         assertEq(evolutionToken.tradingOpen(), false);
-        assertEq(address(evolutionToken.rewardManager()), address(rewardManager));
+        assertEq(address(evolutionToken.rewardVault()), address(rewardVault));
     }
 
     function testBalanceOf() public view {
@@ -159,7 +159,10 @@ contract EvolutionTokenTest is Test {
     function testChangedAllowance() public {
         vm.startPrank(owner);
         evolutionToken.approve(user1, (100 * weiValue * 10) / 100);
-        assertEq(evolutionToken.allowance(owner, user1), (100 * weiValue * 10) / 100);
+        assertEq(
+            evolutionToken.allowance(owner, user1),
+            (100 * weiValue * 10) / 100
+        );
 
         evolutionToken.approve(user1, (2 * 100 * weiValue * 10) / 100);
         assertEq(
@@ -244,7 +247,11 @@ contract EvolutionTokenTest is Test {
 
         vm.prank(user1);
         vm.expectRevert();
-        evolutionToken.transferFrom(owner, user1, 2 * tokenTotalSupply * weiValue);
+        evolutionToken.transferFrom(
+            owner,
+            user1,
+            2 * tokenTotalSupply * weiValue
+        );
     }
 
     function testTransferFromFailInsufficientAllowance() public {
@@ -275,7 +282,11 @@ contract EvolutionTokenTest is Test {
         evolutionToken.approve(user1, (ownerBalance * 10) / 100);
         vm.stopPrank();
         vm.prank(user1);
-        evolutionToken.transferFrom(owner, address(0), (ownerBalance * 10) / 100);
+        evolutionToken.transferFrom(
+            owner,
+            address(0),
+            (ownerBalance * 10) / 100
+        );
     }
 
     function testFailTransferBeforeTradingOpen() public {
@@ -354,14 +365,20 @@ contract EvolutionTokenTest is Test {
         evolutionToken.transfer(user2, transferAmt);
         vm.stopPrank();
 
-        assertEq(evolutionToken.balanceOf(owner), ownerBalance - (2 * transferAmt));
+        assertEq(
+            evolutionToken.balanceOf(owner),
+            ownerBalance - (2 * transferAmt)
+        );
         assertEq(evolutionToken.balanceOf(user1), transferAmt);
         assertEq(evolutionToken.balanceOf(user2), transferAmt);
 
         vm.prank(user1);
         evolutionToken.transfer(user2, transferAmt);
 
-        assertEq(evolutionToken.balanceOf(owner), ownerBalance - (2 * transferAmt));
+        assertEq(
+            evolutionToken.balanceOf(owner),
+            ownerBalance - (2 * transferAmt)
+        );
         assertEq(evolutionToken.balanceOf(user1), 0);
         assertEq(evolutionToken.balanceOf(user2), (transferAmt * 175) / 100);
     }
@@ -557,8 +574,8 @@ contract EvolutionTokenTest is Test {
 
     function testSetRewardManager() public {
         vm.prank(owner);
-        evolutionToken.setRewardManager(address(rewardManager));
-        assertEq(address(evolutionToken.rewardManager()), address(rewardManager));
+        evolutionToken.setRewardManager(address(rewardVault));
+        assertEq(address(evolutionToken.rewardVault()), address(rewardVault));
     }
 
     function testFailAddLiquidityByNonOwnerOnUniswap() public {
@@ -725,7 +742,10 @@ contract EvolutionTokenTest is Test {
     function testOpenTrading() public {
         deal(owner, 1 ether);
         vm.startPrank(owner);
-        evolutionToken.transfer(address(evolutionToken), 100 * 10 ** evolutionToken.decimals());
+        evolutionToken.transfer(
+            address(evolutionToken),
+            100 * 10 ** evolutionToken.decimals()
+        );
         evolutionToken.openTrading{value: 1 ether}();
         vm.stopPrank();
         assertTrue(evolutionToken.tradingOpen());
@@ -736,7 +756,10 @@ contract EvolutionTokenTest is Test {
     function testFailOpenTradingInsufficientBalance() public {
         deal(owner, 1 ether);
         vm.startPrank(owner);
-        assertEq(uint256(evolutionToken.balanceOf(address(evolutionToken))), uint256(0));
+        assertEq(
+            uint256(evolutionToken.balanceOf(address(evolutionToken))),
+            uint256(0)
+        );
         evolutionToken.openTrading{value: 1 ether}();
         vm.stopPrank();
         assertTrue(evolutionToken.tradingOpen());
@@ -747,9 +770,15 @@ contract EvolutionTokenTest is Test {
     function testFailOpenTradingTwice() public {
         deal(owner, 1 ether);
         vm.startPrank(owner);
-        evolutionToken.transfer(address(evolutionToken), 100 * 10 ** evolutionToken.decimals());
+        evolutionToken.transfer(
+            address(evolutionToken),
+            100 * 10 ** evolutionToken.decimals()
+        );
         evolutionToken.openTrading{value: 1 ether}();
-        evolutionToken.transfer(address(evolutionToken), 100 * 10 ** evolutionToken.decimals());
+        evolutionToken.transfer(
+            address(evolutionToken),
+            100 * 10 ** evolutionToken.decimals()
+        );
         evolutionToken.openTrading{value: 1 ether}();
         vm.stopPrank();
         assertTrue(evolutionToken.tradingOpen());
@@ -760,7 +789,9 @@ contract EvolutionTokenTest is Test {
     function testSwapAfterOpenTrading() public {
         _openTrading(1 ether);
         _swapETHToEvolution(user1, 1 ether);
-        uint256 evolutionTokenBalanceAfterSwap = evolutionToken.balanceOf(user1);
+        uint256 evolutionTokenBalanceAfterSwap = evolutionToken.balanceOf(
+            user1
+        );
         _swapEvolutionToETH(user1, evolutionTokenBalanceAfterSwap);
     }
 
@@ -820,7 +851,7 @@ contract EvolutionTokenTest is Test {
         // 10 times to reach reduceAtCount
         for (uint8 i = 0; i < 10; i++) {
             uint256 rewardManagerInitialbalance = evolutionToken.balanceOf(
-                address(rewardManager)
+                address(rewardVault)
             );
             uint256 balanceBeforeSwap = evolutionToken.balanceOf(user1);
 
@@ -841,7 +872,7 @@ contract EvolutionTokenTest is Test {
             uint256 balanceAfterSwap = evolutionToken.balanceOf(user1);
 
             uint256 rewardManagerFinalbalance = evolutionToken.balanceOf(
-                address(rewardManager)
+                address(rewardVault)
             );
 
             assertTrue(
@@ -868,7 +899,7 @@ contract EvolutionTokenTest is Test {
     function testBuyingTransferTaxAfterThresholdForUnVerifiedUser() public {
         _finishInitialTransferTaxLimit();
         uint256 initialRewardBalance = evolutionToken.balanceOf(
-            address(rewardManager)
+            address(rewardVault)
         );
 
         uint256 initialOwnerBalance = evolutionToken.balanceOf(owner);
@@ -892,7 +923,9 @@ contract EvolutionTokenTest is Test {
 
         uint256 balanceAfter11thSwap = evolutionToken.balanceOf(user1);
 
-        uint256 finalRewardBalance = evolutionToken.balanceOf(address(rewardManager));
+        uint256 finalRewardBalance = evolutionToken.balanceOf(
+            address(rewardVault)
+        );
         uint256 finalOwnerBalance = evolutionToken.balanceOf(owner);
         assertTrue(
             (outputAmountFor11thSwap * 99) / 100 <
@@ -930,12 +963,14 @@ contract EvolutionTokenTest is Test {
         _registerWithDevice(user1, owner);
         vm.startPrank(user1);
 
-        address referrer = rewardManager.getReferrerAddress(user1);
+        address referrer = rewardVault.getReferrerAddress(user1);
         assertEq(referrer, owner);
         uint256 initialRewardBalance = evolutionToken.balanceOf(
-            address(rewardManager)
+            address(rewardVault)
         );
-        uint256 referrerRewardInitialBalance = evolutionToken.balanceOf(referrer);
+        uint256 referrerRewardInitialBalance = evolutionToken.balanceOf(
+            referrer
+        );
         uint256 balanceBefore11thSwap = evolutionToken.balanceOf(user1);
 
         uint256 outputAmountFor11thSwap = _getAmountOut(
@@ -956,7 +991,9 @@ contract EvolutionTokenTest is Test {
 
         uint256 referrerRewardFinalBalance = evolutionToken.balanceOf(referrer);
 
-        uint256 finalRewardBalance = evolutionToken.balanceOf(address(rewardManager));
+        uint256 finalRewardBalance = evolutionToken.balanceOf(
+            address(rewardVault)
+        );
 
         assertTrue(
             (outputAmountFor11thSwap * 99) / 100 <
@@ -1017,7 +1054,7 @@ contract EvolutionTokenTest is Test {
         uint256 balanceBeforeSell = user1.balance;
 
         uint256 rewardManagerInitialBalance = evolutionToken.balanceOf(
-            address(rewardManager)
+            address(rewardVault)
         );
 
         uint256 sellOutputAmount = _getAmountOut(
@@ -1037,7 +1074,7 @@ contract EvolutionTokenTest is Test {
         uint256 balanceAfterSell = user1.balance;
 
         uint256 rewardManagerFinalBalance = evolutionToken.balanceOf(
-            address(rewardManager)
+            address(rewardVault)
         );
 
         assertTrue(
@@ -1066,7 +1103,7 @@ contract EvolutionTokenTest is Test {
         _swapETHToEvolution(user1, 1 ether);
 
         uint256 initialRewardBalance = evolutionToken.balanceOf(
-            address(rewardManager)
+            address(rewardVault)
         );
 
         uint256 initialOwnerBalance = evolutionToken.balanceOf(owner);
@@ -1086,11 +1123,13 @@ contract EvolutionTokenTest is Test {
         _swapEvolutionToETH(user1, userBalance);
 
         uint256 balanceAfterSell = user1.balance;
-        
-        uint256 finalRewardBalance = evolutionToken.balanceOf(address(rewardManager));
-        
+
+        uint256 finalRewardBalance = evolutionToken.balanceOf(
+            address(rewardVault)
+        );
+
         uint256 finalOwnerBalance = evolutionToken.balanceOf(owner);
-        
+
         assertTrue(
             (sellOutputAmount * 99) / 100 < balanceAfterSell - balanceBeforeSell
         );
@@ -1122,11 +1161,13 @@ contract EvolutionTokenTest is Test {
         vm.stopPrank();
     }
 
-
     function _openTrading(uint256 ethValue) internal {
         deal(owner, ethValue);
         vm.startPrank(owner);
-        evolutionToken.transfer(address(evolutionToken), 100 * 10 ** evolutionToken.decimals());
+        evolutionToken.transfer(
+            address(evolutionToken),
+            100 * 10 ** evolutionToken.decimals()
+        );
         evolutionToken.openTrading{value: ethValue}();
         vm.stopPrank();
     }
@@ -1220,10 +1261,10 @@ contract EvolutionTokenTest is Test {
     function _registerWithDevice(address _account, address _referrer) public {
         (address alice, uint256 key) = makeAddrAndKey("approver_key");
         vm.prank(owner);
-        rewardManager.setApproverAddress(alice);
+        rewardVault.setApproverAddress(alice);
 
-        bytes32 commitment = rewardManager.makeUserRegistrationCommitment(
-            RewardManager.VerificationType.Device,
+        bytes32 commitment = rewardVault.makeUserRegistrationCommitment(
+            RewardVault.VerificationType.Device,
             _referrer,
             block.timestamp
         );
@@ -1231,7 +1272,7 @@ contract EvolutionTokenTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = _signCommitment(commitment, key);
 
         vm.prank(_account);
-        rewardManager.registerWithDevice(_referrer, block.timestamp, v, r, s);
+        rewardVault.registerWithDevice(_referrer, block.timestamp, v, r, s);
     }
 
     function _signCommitment(

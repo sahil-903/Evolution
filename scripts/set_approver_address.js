@@ -1,20 +1,20 @@
 const { ethers, upgrades } = require("hardhat");
-const { getAddress } = require('./saveaddress');
+const { getAddress } = require("./saveaddress");
 const { txOptions } = require("./evolution.config");
 
 const approverAddress = process.env.REGISTRATION_APPROVER_ADDR;
 
 async function main() {
-
-  const rewardManager = await ethers.getContractFactory("RewardManager");
-  const rewardManagerAddr = await getAddress("rewardManager");
-  const rewardManagerInst = await rewardManager.attach(rewardManagerAddr);
+  const rewardVault = await ethers.getContractFactory("RewardVault");
+  const rewardManagerAddr = await getAddress("rewardVault");
+  const rewardManagerInst = await rewardVault.attach(rewardManagerAddr);
 
   const tx = await rewardManagerInst.setApproverAddress(approverAddress);
   await tx.wait();
 
-  console.log(`Approver Address set to : ${await rewardManagerInst.approver()}`)
-
+  console.log(
+    `Approver Address set to : ${await rewardManagerInst.approver()}`
+  );
 }
 
 main()

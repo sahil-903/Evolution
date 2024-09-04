@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import "../lib/forge-std/src/Test.sol";
-import "../contracts/RewardManager.sol";
+import "../contracts/RewardVault.sol";
 import "../contracts/lib/SafeMath.sol";
 import "../contracts/interfaces/IEvolution.sol";
 import "../contracts/interfaces/IWorldID.sol";
@@ -11,7 +11,7 @@ import "../contracts/Evolution.sol";
 contract RewardManagerTest is Test {
     using SafeMath for uint256;
 
-    RewardManager rewardManager;
+    RewardVault rewardVault;
     Evolution evolutionToken;
     IWorldID worldId;
 
@@ -27,7 +27,7 @@ contract RewardManagerTest is Test {
         evolutionToken = new Evolution(1000000);
 
         // worldId = IWorldID(address(new MockWorldID()));
-        rewardManager = new RewardManager(
+        rewardVault = new RewardVault(
             address(evolutionToken),
             5, // total levels
             IWorldID(address(1)),
@@ -50,30 +50,30 @@ contract RewardManagerTest is Test {
         evolutionRewardPercentage[3] = uint32(100000);
         evolutionRewardPercentage[4] = uint32(1000000);
 
-        RewardManager.EvolutionCriteria[]
-            memory data = new RewardManager.EvolutionCriteria[](
+        RewardVault.EvolutionCriteria[]
+            memory data = new RewardVault.EvolutionCriteria[](
                 totalLevels - 1
             );
-        data[0] = RewardManager.EvolutionCriteria(10, 0, 10000);
-        data[1] = RewardManager.EvolutionCriteria(100, 1, 100000);
-        data[2] = RewardManager.EvolutionCriteria(1000, 10, 1000000);
-        data[3] = RewardManager.EvolutionCriteria(10000, 100, 10000000);
+        data[0] = RewardVault.EvolutionCriteria(10, 0, 10000);
+        data[1] = RewardVault.EvolutionCriteria(100, 1, 100000);
+        data[2] = RewardVault.EvolutionCriteria(1000, 10, 1000000);
+        data[3] = RewardVault.EvolutionCriteria(10000, 100, 10000000);
 
-        rewardManager.setEvolutionRewardPercentagePerLevel(
+        rewardVault.setEvolutionRewardPercentagePerLevel(
             evolutionRewardPercentage
         );
-        rewardManager.setEvolutionCriteria(levels, data);
+        rewardVault.setEvolutionCriteria(levels, data);
 
-        evolutionToken.setRewardManager(address(rewardManager));
+        evolutionToken.setRewardManager(address(rewardVault));
 
-        rewardManager.transferOwnership(owner);
+        rewardVault.transferOwnership(owner);
         vm.stopPrank();
     }
 
     function testInitialSetup() public view {
-        assertEq(rewardManager.totalLevels(), 5);
-        assertEq(rewardManager.EvolutionToken(), address(evolutionToken));
-        assertEq(rewardManager.contractDeploymentTimestamp(), block.timestamp);
+        assertEq(rewardVault.totalLevels(), 5);
+        assertEq(rewardVault.EvolutionToken(), address(evolutionToken));
+        assertEq(rewardVault.contractDeploymentTimestamp(), block.timestamp);
     }
 
     function testSetEvolutionCriteria() public {
@@ -83,55 +83,55 @@ contract RewardManagerTest is Test {
         levels[2] = 2;
         levels[3] = 3;
 
-        RewardManager.EvolutionCriteria[]
-            memory criteria = new RewardManager.EvolutionCriteria[](4);
-        criteria[0] = RewardManager.EvolutionCriteria({
+        RewardVault.EvolutionCriteria[]
+            memory criteria = new RewardVault.EvolutionCriteria[](4);
+        criteria[0] = RewardVault.EvolutionCriteria({
             minReferralsRequiredPerLevelToEvolve: 1,
             minOrbReferralsPerLevelToEvolve: 0,
             tokensToBurnPerLevelToEvolve: 10000
         });
-        criteria[1] = RewardManager.EvolutionCriteria({
+        criteria[1] = RewardVault.EvolutionCriteria({
             minReferralsRequiredPerLevelToEvolve: 10,
             minOrbReferralsPerLevelToEvolve: 1,
             tokensToBurnPerLevelToEvolve: 100000
         });
-        criteria[2] = RewardManager.EvolutionCriteria({
+        criteria[2] = RewardVault.EvolutionCriteria({
             minReferralsRequiredPerLevelToEvolve: 15,
             minOrbReferralsPerLevelToEvolve: 10,
             tokensToBurnPerLevelToEvolve: 1000000
         });
-        criteria[3] = RewardManager.EvolutionCriteria({
+        criteria[3] = RewardVault.EvolutionCriteria({
             minReferralsRequiredPerLevelToEvolve: 20,
             minOrbReferralsPerLevelToEvolve: 100,
             tokensToBurnPerLevelToEvolve: 10000000
         });
 
         vm.prank(owner);
-        rewardManager.setEvolutionCriteria(levels, criteria);
+        rewardVault.setEvolutionCriteria(levels, criteria);
 
-        assertEq(rewardManager.getMinReferralsRequiredPerLevelToEvolve(0), 1);
-        assertEq(rewardManager.getMinReferralsRequiredPerLevelToEvolve(1), 10);
-        assertEq(rewardManager.getMinReferralsRequiredPerLevelToEvolve(2), 15);
-        assertEq(rewardManager.getMinReferralsRequiredPerLevelToEvolve(3), 20);
+        assertEq(rewardVault.getMinReferralsRequiredPerLevelToEvolve(0), 1);
+        assertEq(rewardVault.getMinReferralsRequiredPerLevelToEvolve(1), 10);
+        assertEq(rewardVault.getMinReferralsRequiredPerLevelToEvolve(2), 15);
+        assertEq(rewardVault.getMinReferralsRequiredPerLevelToEvolve(3), 20);
 
-        assertEq(rewardManager.getMinOrbReferralsCount(0), 0);
-        assertEq(rewardManager.getMinOrbReferralsCount(1), 1);
-        assertEq(rewardManager.getMinOrbReferralsCount(2), 10);
-        assertEq(rewardManager.getMinOrbReferralsCount(3), 100);
+        assertEq(rewardVault.getMinOrbReferralsCount(0), 0);
+        assertEq(rewardVault.getMinOrbReferralsCount(1), 1);
+        assertEq(rewardVault.getMinOrbReferralsCount(2), 10);
+        assertEq(rewardVault.getMinOrbReferralsCount(3), 100);
 
-        assertEq(rewardManager.getMinTokenAmountToBurn(0), 10000);
-        assertEq(rewardManager.getMinTokenAmountToBurn(1), 100000);
-        assertEq(rewardManager.getMinTokenAmountToBurn(2), 1000000);
-        assertEq(rewardManager.getMinTokenAmountToBurn(3), 10000000);
+        assertEq(rewardVault.getMinTokenAmountToBurn(0), 10000);
+        assertEq(rewardVault.getMinTokenAmountToBurn(1), 100000);
+        assertEq(rewardVault.getMinTokenAmountToBurn(2), 1000000);
+        assertEq(rewardVault.getMinTokenAmountToBurn(3), 10000000);
     }
 
     function testSetEvolutionCriteria_OnlyOwner() public {
         uint8[] memory levels = new uint8[](1);
         levels[0] = 0;
 
-        RewardManager.EvolutionCriteria[]
-            memory criteria = new RewardManager.EvolutionCriteria[](1);
-        criteria[0] = RewardManager.EvolutionCriteria({
+        RewardVault.EvolutionCriteria[]
+            memory criteria = new RewardVault.EvolutionCriteria[](1);
+        criteria[0] = RewardVault.EvolutionCriteria({
             minReferralsRequiredPerLevelToEvolve: 5,
             minOrbReferralsPerLevelToEvolve: 2,
             tokensToBurnPerLevelToEvolve: 100
@@ -142,23 +142,23 @@ contract RewardManagerTest is Test {
                 unauthorizedAddress
             )
         );
-        rewardManager.setEvolutionCriteria(levels, criteria);
+        rewardVault.setEvolutionCriteria(levels, criteria);
     }
 
     function testSetEvolutionCriteria_InvalidLength() public {
         uint8[] memory levels = new uint8[](1);
         levels[0] = 0;
 
-        RewardManager.EvolutionCriteria[]
-            memory criteria = new RewardManager.EvolutionCriteria[](1);
-        criteria[0] = RewardManager.EvolutionCriteria({
+        RewardVault.EvolutionCriteria[]
+            memory criteria = new RewardVault.EvolutionCriteria[](1);
+        criteria[0] = RewardVault.EvolutionCriteria({
             minReferralsRequiredPerLevelToEvolve: 5,
             minOrbReferralsPerLevelToEvolve: 2,
             tokensToBurnPerLevelToEvolve: 100
         });
         vm.prank(owner);
-        vm.expectRevert(RewardManager.InvalidParamLength.selector);
-        rewardManager.setEvolutionCriteria(levels, criteria);
+        vm.expectRevert(RewardVault.InvalidParamLength.selector);
+        rewardVault.setEvolutionCriteria(levels, criteria);
     }
 
     function testSetEvolutionCriteria_InvalidLevel() public {
@@ -168,32 +168,32 @@ contract RewardManagerTest is Test {
         levels[2] = 2;
         levels[3] = 6;
 
-        RewardManager.EvolutionCriteria[]
-            memory criteria = new RewardManager.EvolutionCriteria[](4);
-        criteria[0] = RewardManager.EvolutionCriteria({
+        RewardVault.EvolutionCriteria[]
+            memory criteria = new RewardVault.EvolutionCriteria[](4);
+        criteria[0] = RewardVault.EvolutionCriteria({
             minReferralsRequiredPerLevelToEvolve: 5,
             minOrbReferralsPerLevelToEvolve: 0,
             tokensToBurnPerLevelToEvolve: 10000
         });
-        criteria[1] = RewardManager.EvolutionCriteria({
+        criteria[1] = RewardVault.EvolutionCriteria({
             minReferralsRequiredPerLevelToEvolve: 10,
             minOrbReferralsPerLevelToEvolve: 1,
             tokensToBurnPerLevelToEvolve: 100000
         });
-        criteria[2] = RewardManager.EvolutionCriteria({
+        criteria[2] = RewardVault.EvolutionCriteria({
             minReferralsRequiredPerLevelToEvolve: 15,
             minOrbReferralsPerLevelToEvolve: 10,
             tokensToBurnPerLevelToEvolve: 1000000
         });
-        criteria[3] = RewardManager.EvolutionCriteria({
+        criteria[3] = RewardVault.EvolutionCriteria({
             minReferralsRequiredPerLevelToEvolve: 20,
             minOrbReferralsPerLevelToEvolve: 100,
             tokensToBurnPerLevelToEvolve: 10000000
         });
 
         vm.prank(owner);
-        vm.expectRevert(RewardManager.InvalidLevel.selector);
-        rewardManager.setEvolutionCriteria(levels, criteria);
+        vm.expectRevert(RewardVault.InvalidLevel.selector);
+        rewardVault.setEvolutionCriteria(levels, criteria);
     }
 
     function testSetEvolutionRewardPercentagePerLevel() public {
@@ -205,13 +205,13 @@ contract RewardManagerTest is Test {
         levels[4] = 10000;
 
         vm.prank(owner);
-        rewardManager.setEvolutionRewardPercentagePerLevel(levels);
+        rewardVault.setEvolutionRewardPercentagePerLevel(levels);
 
-        assertEq(rewardManager.evolutionRewardPercentagePerLevel(0), 1);
-        assertEq(rewardManager.evolutionRewardPercentagePerLevel(1), 10);
-        assertEq(rewardManager.evolutionRewardPercentagePerLevel(2), 100);
-        assertEq(rewardManager.evolutionRewardPercentagePerLevel(3), 1000);
-        assertEq(rewardManager.evolutionRewardPercentagePerLevel(4), 10000);
+        assertEq(rewardVault.evolutionRewardPercentagePerLevel(0), 1);
+        assertEq(rewardVault.evolutionRewardPercentagePerLevel(1), 10);
+        assertEq(rewardVault.evolutionRewardPercentagePerLevel(2), 100);
+        assertEq(rewardVault.evolutionRewardPercentagePerLevel(3), 1000);
+        assertEq(rewardVault.evolutionRewardPercentagePerLevel(4), 10000);
     }
 
     function testSetEvolutionRewardPercentagePerLevel_OnlyOwner() public {
@@ -223,21 +223,21 @@ contract RewardManagerTest is Test {
                 unauthorizedAddress
             )
         );
-        rewardManager.setEvolutionRewardPercentagePerLevel(levels);
+        rewardVault.setEvolutionRewardPercentagePerLevel(levels);
     }
 
     function testSetEvolutionRewardPercentagePerLevel_InvalidLength() public {
         uint32[] memory levels = new uint32[](1);
         levels[0] = 100;
         vm.prank(owner);
-        vm.expectRevert(RewardManager.InvalidParamLength.selector);
-        rewardManager.setEvolutionRewardPercentagePerLevel(levels);
+        vm.expectRevert(RewardVault.InvalidParamLength.selector);
+        rewardVault.setEvolutionRewardPercentagePerLevel(levels);
     }
 
     function testSetApproverAddress() public {
         vm.prank(owner);
-        rewardManager.setApproverAddress(approver);
-        assertEq(rewardManager.approver(), approver);
+        rewardVault.setApproverAddress(approver);
+        assertEq(rewardVault.approver(), approver);
     }
 
     function testSetApproverAddress_OnlyOwner() public {
@@ -247,24 +247,24 @@ contract RewardManagerTest is Test {
                 unauthorizedAddress
             )
         );
-        rewardManager.setApproverAddress(approver);
+        rewardVault.setApproverAddress(approver);
     }
 
     function testSetApproverAddress_InvalidAddress() public {
         vm.prank(owner);
-        vm.expectRevert(RewardManager.InvalidAddress.selector);
-        rewardManager.setApproverAddress(address(0));
+        vm.expectRevert(RewardVault.InvalidAddress.selector);
+        rewardVault.setApproverAddress(address(0));
     }
 
     function testAllowDeviceLevelUsers() public {
         // Test that only the owner can call allowDeviceLevelUsers
         vm.prank(owner);
-        rewardManager.allowDeviceLevelUsers(true);
-        assertEq(rewardManager.isDeviceLevelUsersAllowed(), true);
+        rewardVault.allowDeviceLevelUsers(true);
+        assertEq(rewardVault.isDeviceLevelUsersAllowed(), true);
 
         vm.prank(owner);
-        rewardManager.allowDeviceLevelUsers(false);
-        assertEq(rewardManager.isDeviceLevelUsersAllowed(), false);
+        rewardVault.allowDeviceLevelUsers(false);
+        assertEq(rewardVault.isDeviceLevelUsersAllowed(), false);
     }
 
     function testAllowDeviceLevelUsers_OnlyOwner() public {
@@ -275,16 +275,16 @@ contract RewardManagerTest is Test {
                 unauthorizedAddress
             )
         );
-        rewardManager.allowDeviceLevelUsers(true);
+        rewardVault.allowDeviceLevelUsers(true);
     }
 
     function testRegisterWithDevice() public {
         (address alice, uint256 key) = makeAddrAndKey("approver_key");
         vm.prank(owner);
-        rewardManager.setApproverAddress(alice);
+        rewardVault.setApproverAddress(alice);
 
-        bytes32 commitment = rewardManager.makeUserRegistrationCommitment(
-            RewardManager.VerificationType.Device,
+        bytes32 commitment = rewardVault.makeUserRegistrationCommitment(
+            RewardVault.VerificationType.Device,
             user2,
             block.timestamp
         );
@@ -292,48 +292,48 @@ contract RewardManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = _signCommitment(commitment, key);
         // need to set elevolution revard perse
         testSetEvolutionRewardPercentagePerLevel();
-        uint256 noOfUsersInFirstLevel = rewardManager
+        uint256 noOfUsersInFirstLevel = rewardVault
             .getNoOfRegisterUserInLevel(0);
 
         _registerWithDevice(user2, address(0));
         assertEq(
-            rewardManager.getNoOfRegisterUserInLevel(0),
+            rewardVault.getNoOfRegisterUserInLevel(0),
             noOfUsersInFirstLevel + 1
         );
 
-        noOfUsersInFirstLevel = rewardManager.getNoOfRegisterUserInLevel(0);
+        noOfUsersInFirstLevel = rewardVault.getNoOfRegisterUserInLevel(0);
         vm.prank(user1);
-        rewardManager.registerWithDevice(user2, block.timestamp, v, r, s);
+        rewardVault.registerWithDevice(user2, block.timestamp, v, r, s);
 
         (
-            RewardManager.VerificationType verificationType,
+            RewardVault.VerificationType verificationType,
             ,
             ,
             ,
             ,
             ,
 
-        ) = rewardManager.users(user1);
+        ) = rewardVault.users(user1);
 
-        assertTrue(rewardManager.isUserRegistered(user1));
-        assertEq(rewardManager.getReferrerAddress(user1), user2);
+        assertTrue(rewardVault.isUserRegistered(user1));
+        assertEq(rewardVault.getReferrerAddress(user1), user2);
         assertEq(
-            rewardManager.getNoOfRegisterUserInLevel(0),
+            rewardVault.getNoOfRegisterUserInLevel(0),
             noOfUsersInFirstLevel + 1
         );
         assertEq(
             uint8(verificationType),
-            uint8(RewardManager.VerificationType.Device)
+            uint8(RewardVault.VerificationType.Device)
         );
     }
 
     function testRegisterWithDevice_InvalidSigner() public {
         (, uint256 key) = makeAddrAndKey("approver_key");
         vm.prank(owner);
-        rewardManager.setApproverAddress(approver);
+        rewardVault.setApproverAddress(approver);
 
-        bytes32 commitment = rewardManager.makeUserRegistrationCommitment(
-            RewardManager.VerificationType.Device,
+        bytes32 commitment = rewardVault.makeUserRegistrationCommitment(
+            RewardVault.VerificationType.Device,
             user2,
             block.timestamp
         );
@@ -341,8 +341,8 @@ contract RewardManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = _signCommitment(commitment, key);
 
         vm.prank(user1);
-        vm.expectRevert(RewardManager.InvalidSigner.selector);
-        rewardManager.registerWithDevice(user2, block.timestamp, v, r, s);
+        vm.expectRevert(RewardVault.InvalidSigner.selector);
+        rewardVault.registerWithDevice(user2, block.timestamp, v, r, s);
     }
 
     function testRegisterWithOrb() public {
@@ -352,7 +352,7 @@ contract RewardManagerTest is Test {
         uint16[] memory proof = new uint16[](1);
         proof[0] = 0;
         vm.expectRevert();
-        rewardManager.registerWithOrb(
+        rewardVault.registerWithOrb(
             user2,
             user1,
             1,
@@ -369,20 +369,20 @@ contract RewardManagerTest is Test {
             ]
         );
 
-        assertFalse(rewardManager.isUserRegistered(user1));
-        assertFalse(rewardManager.registerNullifierHashes(nullifierHash));
+        assertFalse(rewardVault.isUserRegistered(user1));
+        assertFalse(rewardVault.registerNullifierHashes(nullifierHash));
         (
-            RewardManager.VerificationType verificationType,
+            RewardVault.VerificationType verificationType,
             ,
             ,
             ,
             ,
             ,
 
-        ) = rewardManager.users(user1);
+        ) = rewardVault.users(user1);
         assertEq(
             uint8(verificationType),
-            uint8(RewardManager.VerificationType.None)
+            uint8(RewardVault.VerificationType.None)
         );
     }
 
@@ -390,7 +390,7 @@ contract RewardManagerTest is Test {
         uint256 nullifierHash = 1;
 
         vm.prank(user1);
-        rewardManager.registerWithOrb(
+        rewardVault.registerWithOrb(
             user2,
             user1,
             1,
@@ -408,7 +408,7 @@ contract RewardManagerTest is Test {
         );
 
         vm.prank(user1);
-        rewardManager.registerWithOrb(
+        rewardVault.registerWithOrb(
             user2,
             user1,
             1,
@@ -431,18 +431,18 @@ contract RewardManagerTest is Test {
 
         vm.startPrank(user1);
         // Set user's referrals and token balance to make them eligible
-        // rewardManager.users(user1).numOrbReferrals = 2;
-        // rewardManager.users(user1).numDeviceReferrals = 3;
+        // rewardVault.users(user1).numOrbReferrals = 2;
+        // rewardVault.users(user1).numDeviceReferrals = 3;
 
         // Set token allowance
-        evolutionToken.approve(address(rewardManager), 100);
+        evolutionToken.approve(address(rewardVault), 100);
 
         // Evolve
-        vm.expectRevert(RewardManager.IneligibleToEvolve.selector);
-        rewardManager.evolve();
+        vm.expectRevert(RewardVault.IneligibleToEvolve.selector);
+        rewardVault.evolve();
 
         // Check evolved level
-        (, uint8 evolutionLevel, , , , , ) = rewardManager.users(user1);
+        (, uint8 evolutionLevel, , , , , ) = rewardVault.users(user1);
         assertEq(evolutionLevel, 0);
 
         vm.stopPrank();
@@ -452,11 +452,11 @@ contract RewardManagerTest is Test {
         testSetEvolutionCriteria();
 
         // Set user's referrals and token balance to make them eligible
-        // rewardManager.users(user1).numOrbReferrals = 2;
-        // rewardManager.users(user1).numDeviceReferrals = 3;
+        // rewardVault.users(user1).numOrbReferrals = 2;
+        // rewardVault.users(user1).numDeviceReferrals = 3;
 
         // Set token allowance
-        evolutionToken.approve(address(rewardManager), 100);
+        evolutionToken.approve(address(rewardVault), 100);
 
         // Evolve
         _openTrading(1 ether);
@@ -464,11 +464,11 @@ contract RewardManagerTest is Test {
         testRegisterWithDevice();
         vm.startPrank(user2);
 
-        vm.expectRevert(RewardManager.InsufficientAllowance.selector);
-        rewardManager.evolve();
+        vm.expectRevert(RewardVault.InsufficientAllowance.selector);
+        rewardVault.evolve();
 
         // Check evolved level
-        (, uint8 evolutionLevel, , , , , ) = rewardManager.users(user2);
+        (, uint8 evolutionLevel, , , , , ) = rewardVault.users(user2);
         assertEq(evolutionLevel, 0);
 
         vm.stopPrank();
@@ -478,11 +478,11 @@ contract RewardManagerTest is Test {
         testSetEvolutionCriteria();
 
         // Set user's referrals and token balance to make them eligible
-        // rewardManager.users(user1).numOrbReferrals = 2;
-        // rewardManager.users(user1).numDeviceReferrals = 3;
+        // rewardVault.users(user1).numOrbReferrals = 2;
+        // rewardVault.users(user1).numDeviceReferrals = 3;
 
         // Set token allowance
-        evolutionToken.approve(address(rewardManager), 100);
+        evolutionToken.approve(address(rewardVault), 100);
 
         // Evolve
         _openTrading(1 ether);
@@ -490,26 +490,26 @@ contract RewardManagerTest is Test {
         testRegisterWithDevice();
         vm.startPrank(user2);
 
-        vm.expectRevert(RewardManager.InsufficientAllowance.selector);
-        rewardManager.evolve();
+        vm.expectRevert(RewardVault.InsufficientAllowance.selector);
+        rewardVault.evolve();
 
         evolutionToken.approve(
             address(evolutionToken),
             100000 * 10 ** evolutionToken.decimals()
         );
         evolutionToken.approve(
-            address(rewardManager),
+            address(rewardVault),
             100000 * 10 ** evolutionToken.decimals()
         );
         // uint256 balanceBefore = evolutionToken.balanceOf(user2);
-        rewardManager.evolve();
+        rewardVault.evolve();
         // uint256 balanceAfter = evolutionToken.balanceOf(user2);
 
         // Check evolved level
-        (, uint8 evolutionLevel, , , , , ) = rewardManager.users(user2);
+        (, uint8 evolutionLevel, , , , , ) = rewardVault.users(user2);
         assertEq(evolutionLevel, 1);
         // assertEq((balanceBefore-100000),balanceAfter);
-        assertEq(rewardManager.getUserEvolutionLevel(user2), 1);
+        assertEq(rewardVault.getUserEvolutionLevel(user2), 1);
 
         vm.stopPrank();
     }
@@ -531,29 +531,29 @@ contract RewardManagerTest is Test {
 
         // Simulate reward distribution
         vm.startPrank(address(evolutionToken));
-        rewardManager.distributeRewards(1000);
+        rewardVault.distributeRewards(1000);
 
         vm.stopPrank();
         // Claim rewards
-        // vm.expectRevert(RewardManager.ZeroReward.selector);
+        // vm.expectRevert(RewardVault.ZeroReward.selector);
         // vm.expectRevert("Trading is not active.");
-        // rewardManager.claimReward();
+        // rewardVault.claimReward();
 
         // deal(owner, 100 ether);
         // vm.expectRevert("Trading is already open");
         // _openTrading(1 ether);
 
         // vm.prank(user2);
-        // rewardManager.claimReward();
+        // rewardVault.claimReward();
 
         // Check claimable rewards
-        (, , , , uint256 claimableRewards, , ) = rewardManager.users(user1);
+        (, , , , uint256 claimableRewards, , ) = rewardVault.users(user1);
         assertEq(claimableRewards, 0);
     }
 
     function testFailClaimReward_ZeroReward() public {
         vm.prank(user1);
-        rewardManager.claimReward();
+        rewardVault.claimReward();
     }
 
     function testGetRewardAmount() public view {
@@ -563,12 +563,12 @@ contract RewardManagerTest is Test {
         uint256 claimableRewards = 100;
 
         // Expected reward calculation
-        // Reward per user at level 1 is 0 (initialized in RewardManager)
+        // Reward per user at level 1 is 0 (initialized in RewardVault)
         // Reward amount = 0 (rewardPerUser) + 100 (claimableRewards) - 50 (lastRewardPoints)
         uint256 expectedRewardAmount = 50;
 
         // Call the function and assert the result
-        uint256 actualRewardAmount = rewardManager.getRewardAmount(
+        uint256 actualRewardAmount = rewardVault.getRewardAmount(
             level,
             lastRewardPoints,
             claimableRewards
@@ -582,11 +582,11 @@ contract RewardManagerTest is Test {
         uint256 claimableRewards = 150;
 
         // Expected reward calculation
-        // Reward per user at level 2 is 0 (initialized in RewardManager)
+        // Reward per user at level 2 is 0 (initialized in RewardVault)
         // Reward amount = 0 (rewardPerUser) + 150 (claimableRewards) - 0 (lastRewardPoints)
         uint256 expectedRewardAmount = 150;
 
-        uint256 actualRewardAmount = rewardManager.getRewardAmount(
+        uint256 actualRewardAmount = rewardVault.getRewardAmount(
             level,
             lastRewardPoints,
             claimableRewards
@@ -600,12 +600,12 @@ contract RewardManagerTest is Test {
         uint256 claimableRewards = 25;
 
         // Expected reward calculation
-        // Reward per user at level 0 is 100 (initialized in RewardManager)
+        // Reward per user at level 0 is 100 (initialized in RewardVault)
         // Reward amount = 100 (rewardPerUser) + 25 (claimableRewards) - 150 (lastRewardPoints)
         uint256 expectedRewardAmount = 0; // Since the subtraction might lead to negative, it should ideally be capped at 0 or handled in logic
 
         vm.expectRevert();
-        uint256 actualRewardAmount = rewardManager.getRewardAmount(
+        uint256 actualRewardAmount = rewardVault.getRewardAmount(
             level,
             lastRewardPoints,
             claimableRewards
@@ -643,10 +643,10 @@ contract RewardManagerTest is Test {
     function _registerWithDevice(address _account, address _referrer) public {
         (address alice, uint256 key) = makeAddrAndKey("approver_key");
         vm.prank(owner);
-        rewardManager.setApproverAddress(alice);
+        rewardVault.setApproverAddress(alice);
 
-        bytes32 commitment = rewardManager.makeUserRegistrationCommitment(
-            RewardManager.VerificationType.Device,
+        bytes32 commitment = rewardVault.makeUserRegistrationCommitment(
+            RewardVault.VerificationType.Device,
             _referrer,
             block.timestamp
         );
@@ -654,7 +654,7 @@ contract RewardManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = _signCommitment(commitment, key);
 
         vm.prank(_account);
-        rewardManager.registerWithDevice(_referrer, block.timestamp, v, r, s);
+        rewardVault.registerWithDevice(_referrer, block.timestamp, v, r, s);
     }
 }
 
