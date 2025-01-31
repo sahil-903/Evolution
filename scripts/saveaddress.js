@@ -11,12 +11,6 @@ switch (process.env.NETWORK) {
     case "amoy":
         filePath = '../deployments/amoy/address.json';
         break;
-    case "optimism":
-        filePath = '../deployments/optimism/address.json';
-        break;
-    case "opSepolia":
-        filePath = '../deployments/opSepolia/address.json';
-        break;
     case "hardhat":
         filePath = '../deployments/hardhat/address.json';
         break;

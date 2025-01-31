@@ -1,66 +1,74 @@
-## Foundry
+### Download and install dependencies
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
 
-Foundry consists of:
+git clone https://github.com/sahil-903/subscription.git
+cd subscription-contracts
+nvm use 20.17.0
+npm i
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
 
-## Documentation
+### Compile
 
-https://book.getfoundry.sh/
 
-## Usage
+npx hardhat compile
 
-### Build
 
-```shell
-$ forge build
-```
+### Set env variables
+Create .evn file at the root of the project and fill below values. Refer to env_sample for reference
 
-### Test
+DEPLOYER_KEY=
+NODE_ID=
+NETWORK= polygon | amoy
 
-```shell
-$ forge test
-```
 
-### Format
+### Prepare for Deployment
 
-```shell
-$ forge fmt
-```
+Custom `gas` value can be configured for different network in `hardhat.config.js`
 
-### Gas Snapshots
+e.g.
 
-```shell
-$ forge snapshot
-```
+amoy: {
+      url: `https://polygon-amoy.infura.io/v3/${process.env.NODE_ID}`,
+      tags: ["test"],
+      gas: 6_000_000,
+      gasPrice: 35_000_000_000,
+      timeout: 1200000,
+      chainId: 80002,
+      accounts: real_accounts,
+    },
 
-### Anvil
 
-```shell
-$ anvil
-```
+
+
+Visite below script to deploy contract.
+
+deploy/deploy_subscriptionManager.js
+
+
+
+
+
+Remove entries of deployment script from below file which you want to either deploy 
+
+
+deployments/amoy/.migrations.json
+
+
+
+
+To do fresh deployment, content of this file should look like this
+
+
+{
+
+}
+
 
 ### Deploy
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
 
-### Cast
+# deploy on testnet
+npx hardhat deploy --network amoy
 
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+# deploy on mainnet
+npx hardhat deploy --network polygon
